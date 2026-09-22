@@ -3,81 +3,142 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="dark light" />
-  <title>BILAtiny · CVNSS4.0 + Laya + DeepSeek</title>
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#0a0d14" />
+  <title>BILAtiny · CVNSS4.0 · Laya · DeepSeek</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <main class="shell">
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">VIETFLEXMAP / LAYA</div>
-        <h1>BILAtiny Chat</h1>
-        <p>CVNSS4.0 làm biểu diễn làm việc · Laya định tuyến quyết định · DeepSeek sinh câu trả lời.</p>
+  <div class="app">
+    <header>
+      <div class="logo">
+        <div class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.87V13a4 4 0 0 0 2 3.46V18a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-1.54A4 4 0 0 0 19 13v-2.13A4 4 0 0 0 16 7V6a4 4 0 0 0-4-4z"/>
+            <path d="M9 9h1"/><path d="M14 9h1"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="title">BILAtiny</span>
+          <span class="subtitle">CVNSS4.0 · Laya decision gate · DeepSeek</span>
+        </div>
       </div>
-      <button id="settingsBtn" class="ghost" type="button">Cài đặt</button>
+
+      <div class="controls">
+        <button class="btn mode-auto" id="modeBtn" type="button" title="Chế độ: Auto">
+          <span id="modeDot" class="mode-dot"></span>
+          <span id="modeLabel">Auto</span>
+        </button>
+        <button class="btn" id="settingsBtn" type="button" title="Cài đặt">Cài đặt</button>
+        <button class="btn icon-btn" id="clearBtn" type="button" title="Xóa hội thoại" aria-label="Xóa hội thoại">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
-    <section class="statusbar" aria-label="Trạng thái hệ thống">
-      <span id="backendStatus" class="pill">Backend: chưa kiểm tra</span>
-      <span id="cvnssStatus" class="pill">CVNSS: đang nạp</span>
-      <span id="layaStatus" class="pill">Laya: chờ</span>
-    </section>
+    <div class="statusbar">
+      <span id="apiStatus" class="status-chip">API trực tiếp: chưa cấu hình</span>
+      <span id="layaStatus" class="status-chip">Laya: local fallback</span>
+      <span id="cvnssStatus" class="status-chip">CVNSS: đang nạp</span>
+    </div>
 
-    <section id="messages" class="messages" aria-live="polite"></section>
+    <main class="chat" id="chat">
+      <section class="empty" id="empty">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-3 3.87V13a4 4 0 0 0 2 3.46V18a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-1.54A4 4 0 0 0 19 13v-2.13A4 4 0 0 0 16 7V6a4 4 0 0 0-4-4z"/>
+            <path d="M9 9h1"/><path d="M14 9h1"/><path d="M9.5 15s1 .5 2.5.5 2.5-.5 2.5-.5"/>
+          </svg>
+        </div>
+        <h1>Sẵn sàng trò chuyện</h1>
+        <p>Tiếng Việt được chuẩn hóa Unicode NFC, tạo thêm biểu diễn CVNSS4.0, Laya chọn đường xử lý và DeepSeek được gọi trực tiếp từ trình duyệt.</p>
+        <div class="chips">
+          <button class="chip" type="button" data-prompt="Xin chào">Xin chào</button>
+          <button class="chip" type="button" data-prompt="Giải thích CVNSS4.0 là gì">CVNSS4.0 là gì?</button>
+          <button class="chip" type="button" data-prompt="Phân tích kiến trúc Laya + CVNSS4.0 + DeepSeek">Phân tích kiến trúc</button>
+        </div>
+      </section>
+    </main>
 
-    <form id="chatForm" class="composer">
-      <textarea id="prompt" rows="3" placeholder="Nhập câu hỏi bằng tiếng Việt Unicode…" autocomplete="off" required></textarea>
-      <div class="composer-row">
-        <label class="check"><input id="showCvnss" type="checkbox" /> Hiện CVNSS4.0</label>
-        <button id="sendBtn" type="submit">Gửi</button>
+    <div class="composer">
+      <div class="composer-wrap">
+        <textarea id="input" rows="1" placeholder="Nhập tin nhắn… (Enter để gửi, Shift+Enter xuống dòng)" autocomplete="off"></textarea>
       </div>
-    </form>
-  </main>
+      <button class="send" id="send" type="button" title="Gửi" aria-label="Gửi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+
+    <footer>
+      <div>CVNSS4.0 · Laya · DeepSeek</div>
+      <div>API trực tiếp · key chỉ giữ trong phiên trình duyệt</div>
+    </footer>
+  </div>
 
   <dialog id="settingsDialog">
     <form method="dialog" class="settings-card">
       <div class="settings-head">
-        <h2>Cài đặt kết nối</h2>
-        <button value="cancel" class="ghost" type="submit">Đóng</button>
+        <div>
+          <h2>Cài đặt API</h2>
+          <p>API client được nhúng thẳng trong frontend. Không commit khóa bí mật vào GitHub.</p>
+        </div>
+        <button class="btn" value="cancel" type="submit">Đóng</button>
       </div>
 
-      <label>Backend URL
-        <input id="backendUrl" type="url" value="http://127.0.0.1:8787" spellcheck="false" />
+      <label>
+        OpenRouter API key
+        <input id="apiKey" type="password" placeholder="sk-or-v1-…" autocomplete="off" />
+        <small>Lưu trong <code>sessionStorage</code>, tự mất khi đóng tab.</small>
       </label>
 
-      <label>DeepSeek API key
-        <input id="apiKey" type="password" placeholder="sk-…" autocomplete="off" />
-        <small>Chỉ lưu trong sessionStorage của tab hiện tại, không ghi vào GitHub.</small>
+      <label>
+        Model
+        <input id="model" type="text" value="deepseek/deepseek-v4-pro-0813" spellcheck="false" />
       </label>
 
-      <label>Model DeepSeek
-        <select id="model">
-          <option value="deepseek-v4-flash">deepseek-v4-flash</option>
-          <option value="deepseek-flash">deepseek-flash</option>
-          <option value="deepseek-v4-pro">deepseek-v4-pro</option>
-        </select>
+      <label>
+        API URL
+        <input id="apiUrl" type="url" value="https://openrouter.ai/api/v1/chat/completions" spellcheck="false" />
       </label>
 
-      <label class="check"><input id="forceThinking" type="checkbox" /> Luôn bật thinking (bỏ qua lựa chọn nhanh của Laya)</label>
+      <label>
+        Laya Decision URL <span class="optional">(tùy chọn)</span>
+        <input id="layaUrl" type="url" placeholder="https://your-laya-service.example.com" spellcheck="false" />
+        <small>Để trống: dùng decision gate cục bộ. Có URL: gọi Laya thật qua <code>/api/decide</code>.</small>
+      </label>
+
+      <label class="check">
+        <input id="showTechnical" type="checkbox" />
+        Hiện CVNSS4.0 và metadata quyết định
+      </label>
 
       <div class="settings-actions">
-        <button id="testBtn" type="button" class="ghost">Kiểm tra backend</button>
-        <button id="saveBtn" type="button">Lưu phiên</button>
+        <button id="testApiBtn" class="btn" type="button">Kiểm tra cấu hình</button>
+        <button id="saveBtn" class="primary" type="button">Lưu phiên</button>
       </div>
 
-      <p class="warning">Không nhập API key trên máy dùng chung. Trang tĩnh không thể giấu khóa; chế độ an toàn nhất là đặt <code>DEEPSEEK_API_KEY</code> ở backend và để ô key trống.</p>
+      <p class="security-note">Khóa từng xuất hiện trong file/chat công khai nên được thu hồi và tạo khóa mới trước khi triển khai.</p>
     </form>
   </dialog>
 
   <template id="messageTemplate">
-    <article class="message">
-      <div class="message-role"></div>
-      <div class="message-body"></div>
-      <details class="meta" hidden>
-        <summary>Chi tiết kỹ thuật</summary>
-        <pre></pre>
-      </details>
+    <article class="msg">
+      <div class="head"></div>
+      <div class="bubble">
+        <details class="decision" hidden>
+          <summary>
+            <span class="brain">◈</span>
+            <span class="label">Decision trace</span>
+            <span class="decision-status">ready</span>
+          </summary>
+          <pre></pre>
+        </details>
+        <div class="answer"></div>
+      </div>
     </article>
   </template>
 

@@ -6,6 +6,7 @@ on:
       - "docs/**"
       - "bot_server/**"
       - "BOT_CHAT.md"
+      - ".env.example"
       - ".github/workflows/bot-chat-check.yml"
   push:
     branches: ["main"]
@@ -34,6 +35,13 @@ jobs:
         run: |
           node --check docs/app.js
           node --check docs/cvnss4_0_converter.js
+
+      - name: Assert no committed API secrets
+        run: |
+          if grep -RInE 'sk-or-v1-[A-Za-z0-9_-]{20,}|DEEPSEEK_API_KEY=sk-[A-Za-z0-9_-]{12,}' docs bot_server BOT_CHAT.md .env.example; then
+            echo "Potential API secret found in committed source"
+            exit 1
+          fi
 
       - name: Run CVNSS4.0 self-test
         run: |
