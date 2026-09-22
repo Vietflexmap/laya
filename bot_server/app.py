@@ -69,23 +69,6 @@ def get_laya_router():
     return router
 
 
-LAYA_QUESTIONS: dict[str, Any] = {
-    "mode": {
-        "type": "choice",
-        "instructions": "Choose the cheapest safe processing mode for this user request.",
-        "criteria": {
-            "fast": "simple chat, lookup-style explanation, short rewrite or direct factual response",
-            "think": "multi-step reasoning, planning, complex analysis, ambiguity or high consequence",
-            "code": "software engineering, debugging, architecture, implementation or code review",
-        },
-    },
-    "needs_thinking": {
-        "type": "noul",
-        "instructions": "Would deeper multi-step reasoning materially improve the answer?",
-    },
-}
-
-
 def heuristic_decision(text: str) -> dict[str, Any]:
     """Conservative fallback when Laya is disabled/unavailable."""
     low = text.lower()
