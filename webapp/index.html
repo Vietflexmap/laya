@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0d14" />
+    <meta name="color-scheme" content="dark" />
+    <title>BILAtiny · CVNSS4.0 + Laya Web + DeepSeek</title>
+  </head>
+  <body>
+    <div id="app" class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">B</div>
+          <div class="brand-copy">
+            <strong>BILAtiny</strong>
+            <span>CVNSS4.0 · Laya ONNX · WebGPU/WASM · DeepSeek</span>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="modeBtn" class="btn mode-laya" type="button">
+            <span class="status-dot"></span>
+            <span id="modeLabel">Laya Web</span>
+          </button>
+          <button id="settingsBtn" class="btn" type="button">Cài đặt</button>
+          <button id="clearBtn" class="btn icon" type="button" title="Xóa hội thoại" aria-label="Xóa hội thoại">⌫</button>
+        </div>
+      </header>
+
+      <section class="runtime-bar" aria-label="Trạng thái runtime">
+        <span id="cvnssStatus" class="runtime-chip">CVNSS: đang nạp</span>
+        <span id="layaStatus" class="runtime-chip">Laya: chưa tải</span>
+        <span id="providerStatus" class="runtime-chip">Runtime: —</span>
+        <span id="apiStatus" class="runtime-chip">DeepSeek API: cần key</span>
+      </section>
+
+      <main id="chat" class="chat">
+        <section id="empty" class="empty">
+          <div class="hero-mark">◈</div>
+          <h1>AI quyết định ngay trong trình duyệt</h1>
+          <p>
+            CVNSS4.0 chạy local. Laya multilingual chạy ONNX bằng WebGPU, tự rơi về WASM nếu cần.
+            DeepSeek được gọi trực tiếp từ browser. Không cần Python server.
+          </p>
+          <div class="architecture">
+            <span>Unicode</span><b>→</b><span>CVNSS4.0</span><b>→</b><span>Laya Web</span><b>→</b><span>DeepSeek</span><b>→</b><span>Unicode NFC</span>
+          </div>
+          <div class="quick-prompts">
+            <button type="button" class="chip" data-prompt="Xin chào, hãy giới thiệu ngắn gọn về BILAtiny.">Xin chào</button>
+            <button type="button" class="chip" data-prompt="Phân tích kiến trúc CVNSS4.0 + Laya + DeepSeek chạy hoàn toàn trên web.">Phân tích kiến trúc</button>
+            <button type="button" class="chip" data-prompt="Viết một hàm JavaScript chuyển một mảng điểm thành trung bình cộng.">Thử quyết định code</button>
+          </div>
+        </section>
+      </main>
+
+      <section class="composer">
+        <div class="input-shell">
+          <textarea id="input" rows="1" placeholder="Nhập câu hỏi bằng tiếng Việt…" autocomplete="off"></textarea>
+          <div id="loadProgress" class="load-progress" hidden>
+            <div class="progress-track"><div id="progressBar" class="progress-bar"></div></div>
+            <span id="progressText">Đang tải Laya…</span>
+          </div>
+        </div>
+        <button id="sendBtn" class="send" type="button" title="Gửi" aria-label="Gửi">➤</button>
+      </section>
+
+      <footer>
+        <span>100% Web runtime cho CVNSS + Laya</span>
+        <span>Model được cache cục bộ sau lần tải đầu</span>
+      </footer>
+    </div>
+
+    <dialog id="settingsDialog">
+      <form method="dialog" class="settings-card">
+        <div class="settings-head">
+          <div>
+            <h2>Cài đặt</h2>
+            <p>Không có khóa API nào được hard-code trong repo.</p>
+          </div>
+          <button type="submit" value="cancel" class="btn">Đóng</button>
+        </div>
+
+        <label>
+          OpenRouter API key
+          <input id="apiKey" type="password" placeholder="sk-or-v1-…" autocomplete="off" />
+          <small>Chỉ lưu trong sessionStorage của tab hiện tại.</small>
+        </label>
+
+        <label>
+          DeepSeek model
+          <input id="deepseekModel" type="text" value="deepseek/deepseek-v4-pro-0813" spellcheck="false" />
+        </label>
+
+        <label>
+          OpenRouter endpoint
+          <input id="apiUrl" type="url" value="https://openrouter.ai/api/v1/chat/completions" spellcheck="false" />
+        </label>
+
+        <label>
+          Laya ONNX bundle
+          <input id="layaModelUrl" type="url" value="https://huggingface.co/mizchi/laya-multilingual-onnx/resolve/main/" spellcheck="false" />
+          <small>Float16 multilingual bundle. Lần đầu có thể tải hàng trăm MB; các lần sau dùng Cache Storage.</small>
+        </label>
+
+        <label class="check">
+          <input id="showTechnical" type="checkbox" />
+          Hiện CVNSS4.0 + quyết định Laya + token metadata
+        </label>
+
+        <div class="settings-actions">
+          <button id="preloadBtn" class="btn" type="button">Tải Laya ngay</button>
+          <button id="saveBtn" class="primary" type="button">Lưu phiên</button>
+        </div>
+
+        <p class="note">
+          WebGPU cần HTTPS hoặc localhost. Nếu trình duyệt không có WebGPU, runtime thử WASM.
+          API key vẫn là bí mật của người dùng và không nên dùng trên máy công cộng.
+        </p>
+      </form>
+    </dialog>
+
+    <template id="messageTemplate">
+      <article class="message">
+        <div class="message-head"></div>
+        <div class="message-card">
+          <details class="trace" hidden>
+            <summary>
+              <span>◈ Decision trace</span>
+              <span class="trace-status">ready</span>
+            </summary>
+            <pre></pre>
+          </details>
+          <div class="answer"></div>
+        </div>
+      </article>
+    </template>
+
+    <script src="./cvnss4_0_converter.js"></script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

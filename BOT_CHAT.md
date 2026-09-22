@@ -1,121 +1,91 @@
-# BILAtiny Chat — CVNSS4.0 + Laya + DeepSeek
+# BILAtiny — CVNSS4.0 + Laya Web ONNX + DeepSeek
 
-Kiến trúc hiện tại được tái cấu trúc để **API LLM chạy trực tiếp trong frontend**:
+BILAtiny now has a **no-Python browser deployment path**.
 
 ```text
-Unicode tiếng Việt
-      ↓
-CVNSS4.0 working representation
-      ↓
-Laya decision gate (tùy chọn)
-      ↓
+Vietnamese Unicode NFC
+        ↓
+CVNSS4.0 local converter
+        ↓
+Laya multilingual ONNX
+        ↓
+WebGPU → WASM fallback
+        ↓
 fast / think / code
-      ↓
-OpenRouter API → DeepSeek
-      ↓
-Final answer
-      ↓
-Unicode NFC
+        ↓
+DeepSeek via direct OpenRouter API
+        ↓
+Final Vietnamese Unicode NFC
 ```
 
-## Vai trò từng lớp
+## Runtime
 
-- **CVNSS4.0**: biểu diễn làm việc phụ trợ cho tiếng Việt. Frontend dùng trực tiếp `CVNSSConverter`.
-- **Laya**: chọn đường xử lý `fast / think / code`. Nếu không cấu hình Laya endpoint, trang dùng local fallback để vẫn chạy độc lập trên GitHub Pages.
-- **DeepSeek qua OpenRouter**: được gọi **trực tiếp từ trình duyệt**. Không còn proxy DeepSeek trong `bot_server`.
-- **Unicode NFC**: đầu vào và câu trả lời cuối đều được chuẩn hóa NFC.
+The production web app lives in `webapp/`.
 
-Ứng dụng không hiển thị `reasoning_content` hay chain-of-thought. Panel kỹ thuật chỉ hiển thị CVNSS4.0, quyết định Laya/local gate và usage metadata.
+- CVNSS4.0 runs as JavaScript in the browser.
+- Laya runs locally in the browser through ONNX Runtime Web.
+- WebGPU is tried first; WASM is the fallback.
+- DeepSeek/OpenRouter is called directly by the browser.
+- No Python API server is required.
+- The OpenRouter key is entered in Settings and stored only in `sessionStorage`.
+- Raw LLM reasoning / chain-of-thought is not displayed.
 
-## Chạy GitHub Pages / frontend
+The old `bot_server` bridge from the first prototype has been removed.
 
-Frontend nằm trong `docs/`.
-
-Local:
+## Development
 
 ```bash
-python -m http.server 5500 -d docs
+cd webapp
+npm install
+npm run typecheck
+npm run build
+npm run dev
 ```
 
-Mở:
+The Vite build copies the required ONNX Runtime Web `.wasm`/`.mjs` assets into `public/ort/`.
+
+## Laya model bundle
+
+Default browser model:
 
 ```text
-http://127.0.0.1:5500
+https://huggingface.co/mizchi/laya-multilingual-onnx/resolve/main/
 ```
 
-Hoặc bật GitHub Pages:
+The first load downloads a large float16 ONNX model. The loader reports progress and stores the model response in browser Cache Storage when quota permits. Later sessions can reuse the cached bytes.
 
-**Settings → Pages → Deploy from a branch → main → /docs**
+The browser runtime under `webapp/src/vendor/laya-web/` is derived from the Apache-2.0 browser implementation in `mizchi/laya-mlx`. See `webapp/THIRD_PARTY_NOTICES.md`.
 
-Trang dự kiến:
+## Decision gate
+
+BILAtiny uses the same routing schema as Laya's Python preset:
+
+- `difficulty` → score
+- `domain` → choice
+- `needs_tools` → noul
+- `is_sensitive` → noul
+
+Then:
 
 ```text
-https://vietflexmap.github.io/laya/
+domain == code
+  → code
+
+difficulty >= 1.6
+or needs_tools >= 0.50
+or is_sensitive >= 0.35
+  → think
+
+otherwise
+  → fast
+
+low confidence on fast
+  → escalate to think
 ```
 
-## Cấu hình API trực tiếp
-
-Mở **Cài đặt** trong trang:
-
-- OpenRouter API key
-- Model, mặc định: `deepseek/deepseek-v4-pro-0813`
-- API URL, mặc định: `https://openrouter.ai/api/v1/chat/completions`
-- Laya Decision URL (tùy chọn)
-
-API key chỉ được lưu trong `sessionStorage`; không được ghi vào mã nguồn hoặc commit lên GitHub.
-
-> Nếu một API key từng được dán vào source/chat hoặc repo công khai, hãy thu hồi key đó và tạo key mới.
-
-## Chế độ
-
-- **Auto**: gọi API trực tiếp; nếu API lỗi thì chuyển sang Offline converter.
-- **API**: chỉ gọi API trực tiếp.
-- **Offline**: chỉ mã hóa/giải mã CVNSS4.0 cục bộ.
-
-## Laya thật — tùy chọn
-
-Để dùng Laya multilingual thật, chạy decision service:
-
-```bash
-python -m venv .venv
-```
-
-Windows:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-pip install -e .
-pip install -r bot_server/requirements.txt
-uvicorn bot_server.app:app --host 127.0.0.1 --port 8787
-```
-
-Linux/macOS:
-
-```bash
-source .venv/bin/activate
-pip install -e .
-pip install -r bot_server/requirements.txt
-uvicorn bot_server.app:app --host 127.0.0.1 --port 8787
-```
-
-Sau đó đặt **Laya Decision URL** thành:
-
-```text
-http://127.0.0.1:8787
-```
-
-Endpoint:
-
-```text
-GET  /api/health
-POST /api/decide
-```
-
-`/api/decide` trả metadata quyết định nhỏ, không gọi LLM.
+If browser Laya cannot load, the UI labels the result as `local-fallback`; it never pretends that the fallback is the Laya model.
 
 ## CVNSS4.0
-
-Frontend dùng:
 
 ```js
 CVNSSConverter.fromCqn("tôi yêu tiếng Việt").cvss
@@ -123,4 +93,32 @@ CVNSSConverter.fromCvss("...").cqn
 CVNSSConverter.selfTest()
 ```
 
-Converter Audit-Safe vẫn được giữ nguyên để tách rõ engine chuyển đổi khỏi UI/API client.
+CVNSS4.0 is treated as a **working representation** sent alongside Unicode to DeepSeek. The app does not claim to control the model's hidden chain-of-thought.
+
+## GitHub Pages
+
+Workflow:
+
+```text
+.github/workflows/pages-web.yml
+```
+
+It builds `webapp/` and deploys `webapp/dist` as the Pages artifact.
+
+Repository setting required once:
+
+```text
+Settings → Pages → Build and deployment → Source → GitHub Actions
+```
+
+Then the deployment target is:
+
+```text
+https://vietflexmap.github.io/laya/
+```
+
+## Security
+
+Never commit an OpenRouter/DeepSeek key.
+
+If a key has ever appeared in pasted source, a public repository, an issue, or a chat transcript intended for sharing, rotate/revoke it before production use.
