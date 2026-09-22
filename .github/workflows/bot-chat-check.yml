@@ -1,52 +1,51 @@
-name: BILAtiny chat checks
+name: BILAtiny web checks
 
 on:
   pull_request:
     paths:
-      - "docs/**"
-      - "bot_server/**"
+      - "webapp/**"
+      - "docs/cvnss4_0_converter.js"
       - "BOT_CHAT.md"
-      - ".env.example"
       - ".github/workflows/bot-chat-check.yml"
+      - ".github/workflows/pages-web.yml"
   push:
     branches: ["main"]
     paths:
-      - "docs/**"
-      - "bot_server/**"
+      - "webapp/**"
 
 jobs:
-  syntax-and-cvnss:
+  browser-runtime:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
-
-      - name: Check Python syntax
-        run: python -m py_compile bot_server/app.py
-
-      - name: Check JavaScript syntax
-        run: |
-          node --check docs/app.js
-          node --check docs/cvnss4_0_converter.js
+          node-version: "24"
 
       - name: Assert no committed API secrets
         run: |
-          if grep -RInE 'sk-or-v1-[A-Za-z0-9_-]{20,}|DEEPSEEK_API_KEY=sk-[A-Za-z0-9_-]{12,}' docs bot_server BOT_CHAT.md .env.example; then
+          if grep -RInE 'sk-or-v1-[A-Za-z0-9_-]{20,}|DEEPSEEK_API_KEY=sk-[A-Za-z0-9_-]{12,}' webapp BOT_CHAT.md; then
             echo "Potential API secret found in committed source"
             exit 1
           fi
 
+      - name: Install web dependencies
+        working-directory: webapp
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck browser runtime
+        working-directory: webapp
+        run: npm run typecheck
+
+      - name: Build GitHub Pages artifact
+        working-directory: webapp
+        run: npm run build
+
       - name: Run CVNSS4.0 self-test
         run: |
           node - <<'NODE'
-          const cvnss = require("./docs/cvnss4_0_converter.js");
+          const cvnss = require("./webapp/public/cvnss4_0_converter.js");
           const result = cvnss.selfTest();
           console.log(result);
           if (!result.ok) process.exit(1);
@@ -55,3 +54,9 @@ jobs:
           console.log({ encoded, decoded });
           if (decoded !== "tôi yêu tiếng Việt") process.exit(1);
           NODE
+
+      - name: Verify built runtime assets
+        run: |
+          test -f webapp/dist/index.html
+          test -f webapp/dist/cvnss4_0_converter.js
+          find webapp/dist/ort -type f | grep -E 'ort-wasm.*\.(wasm|mjs)$'
