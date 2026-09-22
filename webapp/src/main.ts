@@ -77,8 +77,16 @@ const SYSTEM_PROMPT = [
   "Khi trả code, giữ nguyên cú pháp code; phần giải thích bằng tiếng Việt Unicode.",
 ].join("\n");
 
+function restoredMode(): Mode {
+  const saved = sessionStorage.getItem("bilatiny.mode");
+  if (saved === "api" || saved === "offline" || saved === "laya") return saved;
+  // Migration from the previous prototype where "auto" meant "use the decision layer".
+  if (saved === "auto") return "laya";
+  return "laya";
+}
+
 const state = {
-  mode: (sessionStorage.getItem("bilatiny.mode") as Mode | null) ?? "laya",
+  mode: restoredMode(),
   apiKey: sessionStorage.getItem("bilatiny.openrouterKey") ?? "",
   apiUrl: sessionStorage.getItem("bilatiny.apiUrl") ?? DEFAULTS.apiUrl,
   deepseekModel: sessionStorage.getItem("bilatiny.deepseekModel") ?? DEFAULTS.deepseekModel,
