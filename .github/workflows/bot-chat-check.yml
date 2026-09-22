@@ -1,0 +1,49 @@
+name: BILAtiny chat checks
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "bot_server/**"
+      - "BOT_CHAT.md"
+      - ".github/workflows/bot-chat-check.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "docs/**"
+      - "bot_server/**"
+
+jobs:
+  syntax-and-cvnss:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check Python syntax
+        run: python -m py_compile bot_server/app.py
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check docs/app.js
+          node --check docs/cvnss4_0_converter.js
+
+      - name: Run CVNSS4.0 self-test
+        run: |
+          node - <<'NODE'
+          const cvnss = require("./docs/cvnss4_0_converter.js");
+          const result = cvnss.selfTest();
+          console.log(result);
+          if (!result.ok) process.exit(1);
+          const encoded = cvnss.fromCqn("tôi yêu tiếng Việt").cvss;
+          const decoded = cvnss.fromCvss(encoded).cqn;
+          console.log({ encoded, decoded });
+          if (decoded !== "tôi yêu tiếng Việt") process.exit(1);
+          NODE
