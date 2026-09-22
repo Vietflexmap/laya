@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>BILAtiny · CVNSS4.0 + Laya + DeepSeek</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">VIETFLEXMAP / LAYA</div>
+        <h1>BILAtiny Chat</h1>
+        <p>CVNSS4.0 làm biểu diễn làm việc · Laya định tuyến quyết định · DeepSeek sinh câu trả lời.</p>
+      </div>
+      <button id="settingsBtn" class="ghost" type="button">Cài đặt</button>
+    </header>
+
+    <section class="statusbar" aria-label="Trạng thái hệ thống">
+      <span id="backendStatus" class="pill">Backend: chưa kiểm tra</span>
+      <span id="cvnssStatus" class="pill">CVNSS: đang nạp</span>
+      <span id="layaStatus" class="pill">Laya: chờ</span>
+    </section>
+
+    <section id="messages" class="messages" aria-live="polite"></section>
+
+    <form id="chatForm" class="composer">
+      <textarea id="prompt" rows="3" placeholder="Nhập câu hỏi bằng tiếng Việt Unicode…" autocomplete="off" required></textarea>
+      <div class="composer-row">
+        <label class="check"><input id="showCvnss" type="checkbox" /> Hiện CVNSS4.0</label>
+        <button id="sendBtn" type="submit">Gửi</button>
+      </div>
+    </form>
+  </main>
+
+  <dialog id="settingsDialog">
+    <form method="dialog" class="settings-card">
+      <div class="settings-head">
+        <h2>Cài đặt kết nối</h2>
+        <button value="cancel" class="ghost" type="submit">Đóng</button>
+      </div>
+
+      <label>Backend URL
+        <input id="backendUrl" type="url" value="http://127.0.0.1:8787" spellcheck="false" />
+      </label>
+
+      <label>DeepSeek API key
+        <input id="apiKey" type="password" placeholder="sk-…" autocomplete="off" />
+        <small>Chỉ lưu trong sessionStorage của tab hiện tại, không ghi vào GitHub.</small>
+      </label>
+
+      <label>Model DeepSeek
+        <select id="model">
+          <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+          <option value="deepseek-flash">deepseek-flash</option>
+          <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+        </select>
+      </label>
+
+      <label class="check"><input id="forceThinking" type="checkbox" /> Luôn bật thinking (bỏ qua lựa chọn nhanh của Laya)</label>
+
+      <div class="settings-actions">
+        <button id="testBtn" type="button" class="ghost">Kiểm tra backend</button>
+        <button id="saveBtn" type="button">Lưu phiên</button>
+      </div>
+
+      <p class="warning">Không nhập API key trên máy dùng chung. Trang tĩnh không thể giấu khóa; chế độ an toàn nhất là đặt <code>DEEPSEEK_API_KEY</code> ở backend và để ô key trống.</p>
+    </form>
+  </dialog>
+
+  <template id="messageTemplate">
+    <article class="message">
+      <div class="message-role"></div>
+      <div class="message-body"></div>
+      <details class="meta" hidden>
+        <summary>Chi tiết kỹ thuật</summary>
+        <pre></pre>
+      </details>
+    </article>
+  </template>
+
+  <script src="./cvnss4_0_converter.js"></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
