@@ -104,27 +104,48 @@ def laya_decision(unicode_text: str, cvnss_text: str) -> dict[str, Any]:
     if not LAYA_ENABLED:
         return heuristic_decision(unicode_text)
     try:
+        from laya import router_questions
+
         router = get_laya_router()
         state = {
-            "unicode": unicode_text,
+            "request": unicode_text,
             "cvnss4": cvnss_text,
             "language": "vi",
         }
-        result = router.predict(state, LAYA_QUESTIONS, model="multilingual", lang="vi")
+        result = router.predict(state, router_questions(), model="multilingual", lang="vi")
         ans = result.get("answers", {})
-        mode_obj = ans.get("mode", {})
-        mode = mode_obj.get("choice", "think")
-        conf = float(mode_obj.get("confidence", 0.0) or 0.0)
-        p_think = float(ans.get("needs_thinking", {}).get("noul", 0.0) or 0.0)
-        if conf < LAYA_THRESHOLD:
+
+        difficulty = float(ans.get("difficulty", {}).get("score", 3.0) or 3.0)
+        domain_obj = ans.get("domain", {})
+        domain = domain_obj.get("choice", "factual_lookup")
+        needs_tools = float(ans.get("needs_tools", {}).get("noul", 0.0) or 0.0)
+        is_sensitive = float(ans.get("is_sensitive", {}).get("noul", 0.0) or 0.0)
+
+        difficulty_conf = float(ans.get("difficulty", {}).get("confidence", 0.0) or 0.0)
+        domain_conf = float(domain_obj.get("confidence", 0.0) or 0.0)
+        conf = min(difficulty_conf, domain_conf)
+
+        if domain == "code":
+            mode = "code"
+        elif difficulty >= 1.6 or needs_tools >= 0.50 or is_sensitive >= 0.35:
             mode = "think"
+        else:
+            mode = "fast"
+
+        # Weak System-1 confidence always escalates to the deeper path.
+        if conf < LAYA_THRESHOLD and mode == "fast":
+            mode = "think"
+
         return {
             "mode": mode,
             "confidence": round(conf, 4),
-            "needs_thinking": round(p_think, 4),
+            "difficulty": round(difficulty, 4),
+            "domain": domain,
+            "needs_tools": round(needs_tools, 4),
+            "is_sensitive": round(is_sensitive, 4),
             "source": "laya",
             "model": result.get("routing", {}).get("model", "multilingual"),
-            "thinking": mode != "fast" or p_think >= 0.60,
+            "thinking": mode != "fast",
         }
     except Exception as exc:
         fallback = heuristic_decision(unicode_text)
